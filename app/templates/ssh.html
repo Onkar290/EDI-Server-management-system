@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSH Connection</title>
+    <style>
+      body {
+        font-family: Consolas, monospace;
+        background-color: #0f0f0f;
+        color: #ffffff;
+        margin: 0;
+        padding: 0;
+      }
+
+      h1 {
+        color: #6bf8ff;
+      }
+
+      #terminal {
+        background-color: #000000;
+        padding: 10px;
+        overflow-y: scroll;
+        height: 400px;
+        border: 1px solid #6bf8ff;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+
+      #terminal pre {
+        margin: 0;
+        font-size: 14px;
+        white-space: pre-wrap;
+      }
+
+      #command-form {
+        display: flex;
+        align-items: center;
+      }
+
+      #command {
+        flex-grow: 1;
+        padding: 5px;
+        border: none;
+        background-color: transparent;
+        color: #ffffff;
+        font-family: Consolas, monospace;
+        font-size: 14px;
+        outline: none;
+      }
+
+      #command:focus {
+        border: none;
+        outline: none;
+      }
+
+      #submit-button {
+        padding: 5px 10px;
+        background-color: #6bf8ff;
+        color: #000000;
+        border: none;
+        cursor: pointer;
+        font-family: Consolas, monospace;
+        font-size: 14px;
+        margin-left: 10px;
+        border-radius: 3px;
+      }
+
+      #submit-button:hover {
+        background-color: #00bfff;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SSH Connection</h1>
+    <div id="terminal"></div>
+    <form id="command-form">
+      <input
+        type="text"
+        id="command"
+        name="command"
+        placeholder="Enter command..."
+        autocomplete="off"
+      />
+      <button type="submit" id="submit-button">Submit</button>
+    </form>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js"></script>
+    <script>
+      var session_id = "{{ session_id }}";
+      var socket = io.connect(
+        "http://" +
+          document.domain +
+          ":" +
+          location.port +
+          "/ssh?session_id=" +
+          session_id
+      );
+
+      socket.on("connect", function () {
+        appendOutput("Connected to SSH WebSocket");
+      });
+
+      socket.on("ssh_response", function (data) {
+        appendOutput(data.data);
+      });
+
+      function appendOutput(output) {
+        var terminal = document.getElementById("terminal");
+        var pre = document.createElement("pre");
+        pre.textContent = output;
+        terminal.appendChild(pre);
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+
+      document
+        .getElementById("command-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          var command = document.getElementById("command").value.trim();
+          if (command !== "") {
+            socket.emit("ssh_command", { data: command });
+            document.getElementById("command").value = "";
+          }
+        });
+    </script>
+  </body>
+</html>
